@@ -81,7 +81,7 @@ static const char* ErrToStr(enum ErrorCodes e) {
 
 static void FindErrors(char str[], int len, StackCharStack* stack_delim_ptr,
                        StackIntStack* stack_err_ptr) {
-  enum EscapeState {
+  enum CodeState {
     kInCode,
     kInCComment,
     kInCPPComment,
@@ -92,7 +92,7 @@ static void FindErrors(char str[], int len, StackCharStack* stack_delim_ptr,
     kEscHexadecimal,
     kEscUnicode,
   };
-  enum EscapeState state = g_in_c_comment ? kInCComment : kInCode;
+  enum CodeState state = g_in_c_comment ? kInCComment : kInCode;
   int esc_pos = 0;
   char unicode_type;
   bool is_char_string;
