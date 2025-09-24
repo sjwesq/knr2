@@ -1,0 +1,17 @@
+-I../utils/
+-std=c99
+-Wall
+-Wextra
+-Wpedantic
+-Wformat=2
+-Wformat-signedness
+-Wvla
+-Wconversion
+-Wshadow
+-Wdouble-promotion
+-Wduplicated-branches
+-Wduplicated-cond
+-Wfloat-equal
+-Walloc-zero
+-fsanitize=address,undefined
+-fsanitize-trap

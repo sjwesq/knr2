@@ -1,0 +1,3 @@
+in="$1"
+cat compile_flags.txt |xargs cc ../utils/*.c "$in"
+
