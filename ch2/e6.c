@@ -9,29 +9,37 @@
 // val 1 is x, val 2 is y, index is p, len is n
 static uint32_t SetBits32(uint32_t val1, uint32_t val2, int index, int len);
 static void PrintBits32(uint32_t x);
-static int GetBit32(uint32_t x, uint32_t pos);
 static void TestPrint32(char label[], uint32_t x);
 static void TestSetBits32(uint32_t val1, uint32_t val2, int index, int len);
 
 int main(void) {
-  TestSetBits32(0x00000000, 0x11111111, 0, 16);
-  TestSetBits32(0xFFFFFFFF, 0x11111111, 16, 16);
+  TestSetBits32(0x00000000, 0xFFFFFFFF, 1, 31);
+  TestSetBits32(0xFFFFFFFF, 0x00000000, 31, 1);
   TestSetBits32(0xFFFFFFFF, 0x22222222, 8, 8);
+  TestSetBits32(0xFFFFFFFF, 0x22222222, 0, 0);
+  TestSetBits32(0xFFFFFFFF, 0x22222222, 0, 32);
 
   return EXIT_SUCCESS;
 }
 
+// index is 0-indexed, and goes from left-to-right
 static uint32_t SetBits32(uint32_t val1, uint32_t val2, int index, int len) {
+  // error checking first
   int width = 32;
-  uint32_t result = val1;
 
-  for (int i = 0; i < len; ++i) {
-    int index_right = width - 1 - index - i;
-    uint32_t mask = ~(UINT32_C(1) << index_right);
-    uint32_t bitvalue = (val2 & ~mask) ? 1 : 0;
-    result &= mask;  // clear current bit
-    result |= (bitvalue << index_right);
+  if (index < 0 || index >= width || len <= 0) {
+    return val1;
+  } else if (len >= width) {
+    return val2;
   }
+
+  uint32_t result = val1;
+  int shift = width - len - index;
+  uint32_t mask = ~(((UINT32_C(1) << len) - 1) << shift);
+  uint32_t values = ~mask & val2;
+
+  result &= mask;  // clear the relevant bits
+  result |= values;
 
   return result;
 }
@@ -46,17 +54,15 @@ static void PrintBits32(uint32_t x) {
   int width = 32;
   uint32_t bit_current = UINT32_C(1) << (width - 1);
   for (int i = width; i > 0; --i) {
-    printf("%d", GetBit32(x, bit_current));
+    printf("%d", (x & bit_current) ? 1 : 0);
     bit_current >>= 1;
   }
 }
 
-static int GetBit32(uint32_t x, uint32_t pos) { return (x & pos) ? 1 : 0; }
-
 static void TestSetBits32(uint32_t val1, uint32_t val2, int index, int len) {
   TestPrint32("x", val1);
   TestPrint32("y", val2);
-  printf("Starting at index %d, chainging %d bits of x to y...\n", index, len);
+  printf("Starting at index %d, changing %d bits of x to y...\n", index, len);
   TestPrint32("result", SetBits32(val1, val2, index, len));
   printf("\n");
 }
