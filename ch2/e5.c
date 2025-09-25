@@ -2,6 +2,7 @@
 // string s1 where any character from the string s2 occurs, or -1 if s1 contains
 // no characters from s2 . (The standard library function strpbrk does the same
 // job but returns a pointer to the location.)
+#include <limits.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,15 +21,15 @@ int main(void) {
 }
 
 int any(const char s1[], const signed char s2[]) {
-  bool char_map[256] = {false};
+  bool char_map[SCHAR_MAX * 2] = {false};
 
   for (int i = 0; s2[i] != '\0'; ++i) {
-    char_map[(int)s2[i] + 127] = true;
+    char_map[(int)s2[i] + SCHAR_MAX / 2] = true;
   };
 
   for (int i = 0; s1[i] != '\0'; ++i) {
     char c_now = s1[i];
-    if (char_map[((int)c_now + 127)]) {
+    if (char_map[((int)c_now + SCHAR_MAX / 2)]) {
       return i;
     }
   }
