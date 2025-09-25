@@ -45,9 +45,8 @@ int main(void) {
     }
     ++line_number;
   }
-  while (!StackCharIsEmpty(&delim_stack)) {
+  if (!StackCharIsEmpty(&delim_stack)) {
     printf("[ERROR] EOF:%s\n", ErrToStr(kBadMatch));
-    StackCharPop(&delim_stack);
   }
 
   return EXIT_SUCCESS;
@@ -122,16 +121,15 @@ static void FindErrors(char str[], int len, StackCharStack* stack_delim_ptr,
         else if (IsDelim(c_now)) {
           char delim_prev = StackCharPeek(stack_delim_ptr);
           if (IsDelimOpen(c_now)) {
+            StackCharPush(stack_delim_ptr, c_now);
             if (!DelimAllowedWithin(delim_prev, c_now)) {
               StackIntPush(stack_err_ptr, kNotAllowed);
-            } else {
-              StackCharPush(stack_delim_ptr, c_now);
             }
           } else if (IsDelimClose(c_now)) {
-            if (delim_prev == MatchDelim(c_now)) {
-              StackCharPop(stack_delim_ptr);
-            } else {
+            if (delim_prev != MatchDelim(c_now)) {
               StackIntPush(stack_err_ptr, kBadMatch);
+            } else {
+              StackCharPop(stack_delim_ptr);
             }
           }
         }
@@ -226,10 +224,5 @@ static void FindErrors(char str[], int len, StackCharStack* stack_delim_ptr,
   // End of line checks
   if (state == kInString || state == kInCharString) {
     StackIntPush(stack_err_ptr, kBadString);
-  }
-  while (StackCharPeek(stack_delim_ptr) == '(' ||
-         StackCharPeek(stack_delim_ptr) == '[') {
-    StackIntPush(stack_err_ptr, kBadMatch);
-    StackCharPop(stack_delim_ptr);
   }
 }
