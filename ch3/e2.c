@@ -10,8 +10,6 @@
 
 static void Escape(char s[], char t[]);
 static void Unescape(char s[], char t[]);
-static bool IsPossibleEscChar(char c);
-static bool IsEscChar(char c);
 static char ConvertFromEsc(char c);
 static char ConvertToEsc(char c);
 
@@ -41,7 +39,7 @@ int main(void) {
 static void Escape(char s[], char t[]) {
   int t_offset = 0;
   for (int i = 0; s[i] != '\0'; ++i, ++t_offset) {
-    if (IsEscChar(s[i])) {
+    if (ConvertFromEsc(s[i]) != -1) {
       t[t_offset++] = '\\';
       t[t_offset] = ConvertFromEsc(s[i]);
     } else {
@@ -53,47 +51,11 @@ static void Escape(char s[], char t[]) {
 static void Unescape(char s[], char t[]) {
   int t_offset = 0;
   for (int i = 0; s[i] != '\0'; ++i, ++t_offset) {
-    if (s[i] == '\\' && IsPossibleEscChar(s[i + 1])) {
+    if (s[i] == '\\' && ConvertToEsc(s[i + 1]) != -1) {
       t[t_offset] = ConvertToEsc(s[i + 1]);
       ++i;
     } else {
       t[t_offset] = s[i];
-    }
-  }
-}
-
-// This is a bit different from the one in `valid.h`. It only checks escape
-// sequences that aren't typically rendered as normal characters.
-static bool IsPossibleEscChar(char c) {
-  switch (c) {
-    case 'a':
-    case 'b':
-    case 'f':
-    case 'n':
-    case 'r':
-    case 't':
-    case 'v': {
-      return true;
-    }
-    default: {
-      return false;
-    }
-  }
-}
-
-static bool IsEscChar(char c) {
-  switch (c) {
-    case '\a':
-    case '\b':
-    case '\f':
-    case '\n':
-    case '\r':
-    case '\t':
-    case '\v': {
-      return true;
-    }
-    default: {
-      return false;
     }
   }
 }
