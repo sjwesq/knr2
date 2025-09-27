@@ -93,8 +93,8 @@ static void FindErrors(char str[], int len, StackCharStack* stack_delim_ptr,
   };
   enum CodeState state = g_in_c_comment ? kInCComment : kInCode;
   int esc_pos = 0;
-  char unicode_type;
-  bool is_char_string;
+  char unicode_type = '\0';
+  bool is_char_string = false;
 
   char c_now = 0, c_prev = 0;
   for (int i = 0; i < len && IsValidChar(str[i]); ++i) {
