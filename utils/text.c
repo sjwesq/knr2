@@ -1,6 +1,9 @@
+
 #include "text.h"
 
 #include <stdio.h>
+
+#define MAX_LINE_LENGTH 1000
 
 int textGetLine(char line_out[], const int limit) {
   int input_value = 0;
@@ -25,4 +28,25 @@ int textGetLine(char line_out[], const int limit) {
   line_out[index] = '\0';
 
   return line_length;
+}
+
+void reverse(char str[]) {
+  char str_copy[MAX_LINE_LENGTH];
+  int index_end = 0;
+
+  /* Find end of string */
+  for (int i = 0; i < MAX_LINE_LENGTH; ++i) {
+    str_copy[i] = str[i];
+    if (str[i] == '\n' || str[i] == '\0') {
+      index_end = i;
+      break;
+    }
+  }
+
+  if (index_end > 1) {
+    for (int i = 0; i < index_end; ++i) {
+      str[i] = str_copy[index_end - i - 1];
+    }
+  }
+  str[index_end] = '\0';
 }
