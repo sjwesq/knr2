@@ -1,4 +1,5 @@
 -I../utils/
+-lm
 -Og
 -std=c99
 -Wall
