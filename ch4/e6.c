@@ -17,15 +17,13 @@
 
 // Constants
 
-#define MAXOP 100
-#define WORD -1
-#define LETTER -1
-#define MAXVAL 100  // maximum depth of val stack
-#define BUFSIZE 100
+#define TOKEN_MAX_LEN 100
+#define VAL_STACK_SIZE 100
+#define UNGETCH_BUF_SIZE 100
 #define EPSILON 1e4 * DBL_EPSILON  // accurate enough to stop divide-by-zero
 
 enum TokenType {
-  kTokenIsNumber = (char)0xF5,  // start of unused UTF-8 space
+  kTokenIsNumber,
   kTokenIsSymbol,
   kTokenIsVariable,
   kTokenIsNewline,
@@ -35,11 +33,11 @@ enum TokenType {
 
 // Globals
 
-static int sp = 0;          // next free stack position
-static double val[MAXVAL];  // value stack
+static int sp = 0;                  // next free stack position
+static double val[VAL_STACK_SIZE];  // value stack
 
-static char buf[BUFSIZE];  // buffer for ungetch
-static int bufp = 0;       // next free position in buf
+static char ungetch_buf[UNGETCH_BUF_SIZE];  // buffer for ungetch
+static int ungetch_buf_pos = 0;             // next free position in buf
 
 static double variable_map[27];
 static char last_var = '\0';
@@ -48,14 +46,17 @@ static char last_var = '\0';
 
 static void StartCalculator(void);
 
-static enum TokenType getop(char s[]);
-static void push(double f);
-static double pop(void);
+static enum TokenType GetNextToken(char str[]);
+static void PushVal(double f);
+static double PopVal(void);
 
-static char getch(void);
-static void ungetch(char c);
+static char GetCh(void);
+static void UngetCh(char c);
+static void MovePastWhitespace(void);
+static void ReadToken(char buf[], int startpos);
 
-static void HandleSymbol(char s[]);
+static void ProcessSymbol(char str[]);
+static void ProcessVariable(char str[]);
 
 static int MapCharToVar(char c);
 static double GetVar(char c);
@@ -68,32 +69,20 @@ int main(void) {
 }
 
 static void StartCalculator(void) {
-  char token[MAXOP];
+  char token[TOKEN_MAX_LEN];
 
   while (true) {
-    switch (getop(token)) {
+    switch (GetNextToken(token)) {
       case kTokenIsNumber: {
-        push(atof(token));
+        PushVal(atof(token));
         break;
       }
       case kTokenIsVariable: {
-        char variable = token[0];
-        int sign = 1;
-        if (token[0] == '-' || token[0] == '+') {
-          variable = token[1];
-        }
-        if (token[0] == '-') {
-          sign = -1;
-        }
-        push(GetVar(variable) * sign);
-
-        if (token[0] != '@') {
-          last_var = token[0];
-        }
+        ProcessVariable(token);
         break;
       }
       case kTokenIsSymbol: {
-        HandleSymbol(token);
+        ProcessSymbol(token);
         break;
       }
       case kTokenIsInvalid: {
@@ -101,7 +90,7 @@ static void StartCalculator(void) {
         break;
       }
       case kTokenIsNewline: {
-        variable_map[0] = pop();
+        variable_map[0] = PopVal();
         printf("\t%.8g\n", variable_map[0]);
         break;
       }
@@ -114,58 +103,44 @@ static void StartCalculator(void) {
 
 // get next operator or numeric operand
 // `s` serves as a buffer to store the next token
-static enum TokenType getop(char s[]) {
-  enum TokenType type_now = kTokenIsInvalid;
-  int s_pos = 0;
-  char c;
-  // clears whitespace before token
-  while ((c = getch()) == ' ' || c == '\t');
-  // c now equals the first character of the token
-  s[0] = c;
-  s[1] = '\0';  // just in case
+static enum TokenType GetNextToken(char str[]) {
+  MovePastWhitespace();
 
-  // 1. Check for sign
-  // Early exit for special conditions
-  if (c == '-' || c == '+') {
-    if (!isalnum(c = getch())) {
-      ungetch(c);
+  char c_start = GetCh();
+  str[0] = c_start;
+  int str_start_pos = 0;
+
+  if (c_start == '-' || c_start == '+') {
+    c_start = GetCh();
+    if (!isalnum(c_start)) {
+      UngetCh(c_start);
+      str[1] = '\0';
       return kTokenIsSymbol;
     } else {
-      s[++s_pos] = c;
+      str[++str_start_pos] = c_start;
     }
   }
-  // 2. Check for number, could be malformed, atof will handle it
-  if (isdigit(c)) {
-    while (!isspace(s[++s_pos] = c = getch()) && s_pos < MAXOP - 1);
-    type_now = kTokenIsNumber;
-  }
-  // 3. Check for variable, ignore rest of token
-  // Variables are any capital letter or '@'
-  else if (isupper(c) || c == '@') {
-    while (!isspace(s[++s_pos] = c = getch()) && s_pos < MAXOP - 1);
-    type_now = kTokenIsVariable;
-  }
-  // 4. Check if symbol
-  else if (isgraph(c)) {
-    while (!isspace(s[++s_pos] = c = getch()) && s_pos < MAXOP - 1);
-    type_now = kTokenIsSymbol;
-    s[s_pos] = '\0';
-  } else if (c == EOF) {
-    return kTokenIsEOF;
-  } else if (c == '\n') {
-    return kTokenIsNewline;
-  }
 
-  if (type_now != kTokenIsInvalid) {
-    ungetch(c);
+  ReadToken(str, str_start_pos);
+
+  if (isdigit(c_start)) {
+    return kTokenIsNumber;
+  } else if (isupper(c_start) || c_start == '@') {
+    return kTokenIsVariable;
+  } else if (isgraph(c_start)) {
+    return kTokenIsSymbol;
+  } else if (c_start == EOF) {
+    return kTokenIsEOF;
+  } else if (c_start == '\n') {
+    return kTokenIsNewline;
+  } else {
+    return kTokenIsInvalid;
   }
-  s[s_pos] = '\0';
-  return type_now;
 }
 
 // push f onto value stack
-static void push(double f) {
-  if (sp < MAXVAL) {
+static void PushVal(double f) {
+  if (sp < VAL_STACK_SIZE) {
     val[sp++] = f;
   } else {
     printf("error: stack full, can't push %g\n", f);
@@ -173,7 +148,7 @@ static void push(double f) {
 }
 
 // pop and return top value from stack
-static double pop(void) {
+static double PopVal(void) {
   if (sp > 0) {
     return val[--sp];
   } else {
@@ -183,100 +158,142 @@ static double pop(void) {
 }
 
 // get a (possibly pushed back) character
-static char getch(void) { return (bufp > 0) ? buf[--bufp] : (char)getchar(); }
+static char GetCh(void) {
+  return (ungetch_buf_pos > 0) ? ungetch_buf[--ungetch_buf_pos]
+                               : (char)getchar();
+}
 
 // push character back on input
-static void ungetch(char c) {
-  if (bufp >= BUFSIZE) {
+static void UngetCh(char c) {
+  if (ungetch_buf_pos >= UNGETCH_BUF_SIZE) {
     printf("ungetch: too many characters\n");
   } else {
-    buf[bufp++] = c;
+    ungetch_buf[ungetch_buf_pos++] = c;
+  }
+}
+
+static void MovePastWhitespace(void) {
+  char c = GetCh();
+  while (c == ' ' || c == '\t') {
+    c = GetCh();
+  }
+  UngetCh(c);
+}
+
+static void ReadToken(char buf[], int startpos) {
+  int i = startpos;
+  if (buf[i] == EOF || buf[i] == '\n') {
+    return;
+  }
+  while (!isspace(buf[++i] = GetCh()) && i < TOKEN_MAX_LEN - 2);
+  UngetCh(buf[i]);
+  buf[i] = '\0';
+}
+
+// Pushes a (single capital letter) variable's value to the stack, and marks it
+// as `last_var`. This is useful for assignment. Signed variables are also
+// allowed.
+static void ProcessVariable(char str[]) {
+  char variable = str[0];
+  int sign = 1;
+
+  if (str[0] == '-' || str[0] == '+') {
+    variable = str[1];
+    if (str[0] == '-') {
+      sign = -1;
+    }
+  }
+
+  PushVal(GetVar(variable) * sign);
+
+  if (str[0] != '@') {
+    last_var = str[0];
   }
 }
 
 // This function is a bit hideous but I think a more sophisticated solution is a
 // bit overkill for this exercise...
-static void HandleSymbol(char s[]) {
+static void ProcessSymbol(char str[]) {
   int sign = 1;
   double op2;
-  char* s_start_ptr = s;
+  char* s_start_ptr = str;
 
   // Set sign, move string start to after sign
-  if (strlen(s) > 1) {
-    if (s[0] == '-') {
+  if (strlen(str) > 1) {
+    if (str[0] == '-') {
       sign = -1;
-      s = &s[1];
-    } else if (s[0] == '+') {
-      s = &s[1];
+      str = &str[1];
+    } else if (str[0] == '+') {
+      str = &str[1];
     }
   }
 
-  // Variable handling
-  if (strcmp(s, "=") == 0) {
+  // Variable assignment
+  if (strcmp(str, "=") == 0) {
     if (last_var != '\0') {
       double prev_value = GetVar(last_var);
-      double new_value = pop();
+      double new_value = PopVal();
       if (prev_value == new_value) {
-        new_value = pop();
+        new_value = PopVal();
       }
       SetVar(last_var, new_value);
-      push(new_value);
+      PushVal(new_value);
       last_var = '\0';
     } else {
       printf("error: variable missing\n");
     }
   }
   // Standard operations
-  else if (strcmp(s, "+") == 0) {
-    push(pop() + pop());
-  } else if (strcmp(s, "*") == 0) {
-    push(pop() * pop());
-  } else if (strcmp(s, "-") == 0) {
-    op2 = pop();
-    push(pop() - op2);
-  } else if (strcmp(s, "/") == 0) {
-    op2 = pop();
+  else if (strcmp(str, "+") == 0) {
+    PushVal(PopVal() + PopVal());
+  } else if (strcmp(str, "*") == 0) {
+    PushVal(PopVal() * PopVal());
+  } else if (strcmp(str, "-") == 0) {
+    op2 = PopVal();
+    PushVal(PopVal() - op2);
+  } else if (strcmp(str, "/") == 0) {
+    op2 = PopVal();
     if (fabs(op2) > EPSILON) {
-      push(pop() / op2);
+      PushVal(PopVal() / op2);
     } else {
       printf("error: zero ulus\n");
     }
-  } else if (strcmp(s, "%") == 0) {
-    op2 = pop();
+  } else if (strcmp(str, "%") == 0) {
+    op2 = PopVal();
     if (fabs(op2) > EPSILON) {
-      push((int)pop() % (int)op2);
+      PushVal((int)PopVal() % (int)op2);
     } else {
       printf("error: zero divisor\n");
     }
-  } else if (strcmp(s, "pow") == 0) {
-    op2 = pop();
-    push(pow(pop(), op2));
+  } else if (strcmp(str, "pow") == 0) {
+    op2 = PopVal();
+    PushVal(pow(PopVal(), op2));
   }
   // Other Operations
-  else if (strcmp(s, "sin") == 0) {
-    push(sin(pop()));
-  } else if (strcmp(s, "cos") == 0) {
-    push(cos(pop()));
-  } else if (strcmp(s, "tan") == 0) {
-    push(tan(pop()));
-  } else if (strcmp(s, "asin") == 0) {
-    push(asin(pop()));
-  } else if (strcmp(s, "acos") == 0) {
-    push(acos(pop()));
-  } else if (strcmp(s, "atan") == 0) {
-    push(atan(pop()));
-  } else if (strcmp(s, "log") == 0) {
-    push(log(pop()));
+  else if (strcmp(str, "sin") == 0) {
+    PushVal(sin(PopVal()));
+  } else if (strcmp(str, "cos") == 0) {
+    PushVal(cos(PopVal()));
+  } else if (strcmp(str, "tan") == 0) {
+    PushVal(tan(PopVal()));
+  } else if (strcmp(str, "asin") == 0) {
+    PushVal(asin(PopVal()));
+  } else if (strcmp(str, "acos") == 0) {
+    PushVal(acos(PopVal()));
+  } else if (strcmp(str, "atan") == 0) {
+    PushVal(atan(PopVal()));
+  } else if (strcmp(str, "log") == 0) {
+    PushVal(log(PopVal()));
   }
   // Constants
-  else if (strcmp(s, "pi") == 0) {
-    push(acos(-1) * sign);
-  } else if (strcmp(s, "e") == 0) {
-    push(exp(1.0) * sign);
+  else if (strcmp(str, "pi") == 0) {
+    PushVal(acos(-1) * sign);
+  } else if (strcmp(str, "e") == 0) {
+    PushVal(exp(1.0) * sign);
   }
 
   // Return string to original state
-  s = s_start_ptr;
+  str = s_start_ptr;
 }
 
 static int MapCharToVar(char c) { return (c == '@') ? 0 : (c - 'A' + 1); }
