@@ -52,7 +52,7 @@ static double PopVal(void);
 static char GetCh(void);
 static void UngetCh(char c);
 static void MovePastWhitespace(void);
-static void ReadToken(char buf[], int startpos);
+static char* ReadToken(char buf[]);
 
 static void ProcessSymbol(char str[]);
 static void ProcessVariable(char str[]);
@@ -105,32 +105,18 @@ static void StartCalculator(void) {
 static enum TokenType GetNextToken(char str[]) {
   MovePastWhitespace();
 
-  char c_start = GetCh();
-  str[0] = c_start;
-  int str_start_pos = 0;
+  char* working_str = ReadToken(str);
+  char c_first = working_str[0];
 
-  if (c_start == '-' || c_start == '+') {
-    c_start = GetCh();
-    if (!isalnum(c_start)) {
-      UngetCh(c_start);
-      str[1] = '\0';
-      return kTokenIsSymbol;
-    } else {
-      str[++str_start_pos] = c_start;
-    }
-  }
-
-  ReadToken(str, str_start_pos);
-
-  if (isdigit(c_start)) {
+  if (isdigit(c_first)) {
     return kTokenIsNumber;
-  } else if (isupper(c_start) || c_start == '@') {
+  } else if (isupper(c_first) || c_first == '@') {
     return kTokenIsVariable;
-  } else if (isgraph(c_start)) {
+  } else if (isgraph(c_first)) {
     return kTokenIsSymbol;
-  } else if (c_start == EOF) {
+  } else if (c_first == EOF) {
     return kTokenIsEOF;
-  } else if (c_start == '\n') {
+  } else if (c_first == '\n') {
     return kTokenIsNewline;
   } else {
     return kTokenIsInvalid;
@@ -179,14 +165,33 @@ static void MovePastWhitespace(void) {
   UngetCh(c);
 }
 
-static void ReadToken(char buf[], int startpos) {
-  int i = startpos;
-  if (buf[i] == EOF || buf[i] == '\n') {
-    return;
+// Reads the next token into buf. A pointer is returned to the start of buf
+// (after signs or prefixes are acouunted for.)
+static char* ReadToken(char buf[]) {
+  char* substr_ptr = buf;
+
+  // Determine if prefixed or not
+  buf[0] = GetCh();
+  if (buf[0] == '-' || buf[0] == '+') {
+    char c_tmp = GetCh();
+    UngetCh(c_tmp);
+    if (isalnum(c_tmp)) {
+      substr_ptr = &buf[1];
+    } else {
+      buf[1] = '\0';
+      return substr_ptr;
+    }
+  } else if (!isgraph(buf[0])) {
+    buf[1] = '\0';
+    return substr_ptr;
   }
-  while (!isspace(buf[++i] = GetCh()) && i < TOKEN_MAX_LEN - 2);
+
+  int i = 0;
+  while (!isspace(buf[++i] = GetCh()) && i < TOKEN_MAX_LEN - 3);
   UngetCh(buf[i]);
   buf[i] = '\0';
+
+  return substr_ptr;
 }
 
 // Pushes a (single capital letter) variable's value to the stack, and marks it
@@ -255,14 +260,14 @@ static void ProcessSymbol(char str[]) {
     if (fabs(op2) > EPSILON) {
       PushVal(PopVal() / op2);
     } else {
-      printf("error: zero ulus\n");
+      printf("error: zero divisor\n");
     }
   } else if (strcmp(str, "%") == 0) {
     op2 = PopVal();
     if (fabs(op2) > EPSILON) {
       PushVal((int)PopVal() % (int)op2);
     } else {
-      printf("error: zero divisor\n");
+      printf("error: zero modulus\n");
     }
   } else if (strcmp(str, "pow") == 0) {
     op2 = PopVal();
