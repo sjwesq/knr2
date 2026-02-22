@@ -1,3 +1,4 @@
+/* Write a program that prints its input one word per line. */
 #include <stdio.h>
 
 int main(void) {
@@ -13,5 +14,7 @@ int main(void) {
     }
     c_last = c;
   }
+  putchar('\n');
+
   return 0;
 }

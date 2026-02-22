@@ -6,7 +6,8 @@
 #define STEP 20
 
 int main(void) {
-  float celsius, fahr;
+  float celsius;
+  float fahr;
 
   celsius = LOWER;
   for (celsius = LOWER; celsius <= UPPER; celsius += STEP) {

@@ -41,7 +41,7 @@ int main(void) {
 //   } while ((n /= 10) > 0);
 //   if (sign < 0) s[i++] = '-';
 //   s[i] = '\0';
-//   reverse(s);
+//   textReverse(s);
 // }
 
 // reversing the sign of INT_MIN is out of range. The integer maximum is
@@ -68,5 +68,5 @@ static void itoaNew(int n, char s[]) {
   }
   s[i] = '\0';
 
-  reverse(s);
+  textReverse(s);
 }

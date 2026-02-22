@@ -5,15 +5,15 @@
 
 #include "text.h"
 
+#define MAX_LINE_LEN 1000
+
 static void RemoveBlank(char str[], const int len);
 
 int main(void) {
-  enum { kMaxLineLength = 1000 };
+  char line_current[MAX_LINE_LEN];
 
-  char line_current[kMaxLineLength];
-
-  while ((textGetLine(line_current, kMaxLineLength)) > 0) {
-    RemoveBlank(line_current, kMaxLineLength);
+  while ((textGetLine(line_current, MAX_LINE_LEN)) > 0) {
+    RemoveBlank(line_current, MAX_LINE_LEN);
     printf("%s", line_current);
   }
 

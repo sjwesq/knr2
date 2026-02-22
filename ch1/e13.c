@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-enum { kMaxWordLength = 29 };
+#define MAX_WORD_LENGTH 29
 
 static int GetMaxValue(int* iarr, int len) {
   int max = iarr[0];
@@ -55,7 +55,7 @@ static void HistogramPrintVertical(int* iarr, int len) {
 int main(void) {
   int c;
   int word_length = 0;
-  int length_occurrences[kMaxWordLength] = {0};
+  int length_occurrences[MAX_WORD_LENGTH] = {0};
 
   printf("\"");
   while ((c = getchar()) != EOF) {
@@ -64,25 +64,25 @@ int main(void) {
       ++word_length;
     } else if (c != '\'' && c != '-') {
       if (word_length > 0) {
-        if (word_length < kMaxWordLength)
+        if (word_length < MAX_WORD_LENGTH)
           ++length_occurrences[word_length - 1];
         else
-          ++length_occurrences[kMaxWordLength - 1];
+          ++length_occurrences[MAX_WORD_LENGTH - 1];
         word_length = 0;
       }
     }
   }
   if (word_length > 0) {
-    if (word_length < kMaxWordLength)
+    if (word_length < MAX_WORD_LENGTH)
       ++length_occurrences[word_length - 1];
     else
-      ++length_occurrences[kMaxWordLength - 1];
+      ++length_occurrences[MAX_WORD_LENGTH - 1];
   }
   printf("\"\n");
 
-  HistogramPrintVertical(length_occurrences, kMaxWordLength);
+  HistogramPrintVertical(length_occurrences, MAX_WORD_LENGTH);
   printf("--------------------\n");
-  HistogramPrintHorizontal(length_occurrences, kMaxWordLength);
+  HistogramPrintHorizontal(length_occurrences, MAX_WORD_LENGTH);
 
   return EXIT_SUCCESS;
 }

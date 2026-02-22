@@ -30,7 +30,7 @@ int textGetLine(char line_out[], const int limit) {
   return line_length;
 }
 
-void reverse(char str[]) {
+void textReverse(char str[]) {
   char str_copy[MAX_LINE_LENGTH];
   int index_end = 0;
 

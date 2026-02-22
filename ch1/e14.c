@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define CHAR_FIRST_INDEX ' '
+#define CHAR_LAST_INDEX '~'
+#define HISTOGRAM_ARR_SIZE CHAR_LAST_INDEX - CHAR_FIRST_INDEX + 2
+
 static void PrintBars(const int amount) {
   for (int i = 0; i < amount; ++i) {
     printf("|");
@@ -27,29 +31,24 @@ static void PrintHistogramCharacters(const char label_arr[],
 }
 
 int main(void) {
-  enum {
-    kCharFirst = ' ',
-    kCharLast = '~',
-    kArrSize = (kCharLast - kCharFirst + 2)
-  };
   int char_input;
-  int char_tally[kArrSize] = {0};
-  char char_labels[kArrSize];
+  int char_tally[HISTOGRAM_ARR_SIZE] = {0};
+  char char_labels[HISTOGRAM_ARR_SIZE];
 
-  for (char i = kCharFirst; i <= kCharLast; ++i) {
-    char_labels[i - kCharFirst] = i;
+  for (char i = CHAR_FIRST_INDEX; i <= CHAR_LAST_INDEX; ++i) {
+    char_labels[i - CHAR_FIRST_INDEX] = i;
   }
 
   while ((char_input = getchar()) != EOF) {
-    if (char_input >= kCharFirst && char_input <= kCharLast) {
-      ++char_tally[char_input - kCharFirst];
+    if (char_input >= CHAR_FIRST_INDEX && char_input <= CHAR_LAST_INDEX) {
+      ++char_tally[char_input - CHAR_FIRST_INDEX];
     } else {
       /* Overflow */
-      ++char_tally[kArrSize - 1];
+      ++char_tally[HISTOGRAM_ARR_SIZE - 1];
     }
   }
 
-  PrintHistogramCharacters(char_labels, char_tally, kArrSize);
+  PrintHistogramCharacters(char_labels, char_tally, HISTOGRAM_ARR_SIZE);
 
   return EXIT_SUCCESS;
 }

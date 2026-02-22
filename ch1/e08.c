@@ -1,3 +1,4 @@
+/* Write a program to count blanks, tabs, and newlines. */
 #include <stdio.h>
 
 int main(void) {
@@ -18,7 +19,7 @@ int main(void) {
         break;
     }
   }
-  printf("%d %d %d\n", blanks, tabs, newlines);
+  printf("blanks:%d tabs:%d newlines:%d\n", blanks, tabs, newlines);
 
   return 0;
 }

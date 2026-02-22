@@ -50,5 +50,5 @@ static void itoaAlign(int n, char s[], int padding) {
   }
   s[i] = '\0';
 
-  reverse(s);
+  textReverse(s);
 }

@@ -8,20 +8,19 @@
 
 #include "text.h"
 
+#define LINE_MAX_LEN 1000
+
 /* Print the longest input line */
 int main(void) {
-  /* Maximum input line length */
-  enum { kMaxLine = 1000 };
-
   int line_len = 0;
   int line_longest_len = 0;
-  char line_current[kMaxLine] = {0};
-  char line_longest[kMaxLine] = {0};
+  char line_current[LINE_MAX_LEN] = {0};
+  char line_longest[LINE_MAX_LEN] = {0};
 
-  while ((line_len = textGetLine(line_current, kMaxLine)) > 0) {
+  while ((line_len = textGetLine(line_current, LINE_MAX_LEN)) > 0) {
     if (line_len > line_longest_len) {
       line_longest_len = line_len;
-      strncpy(line_longest, line_current, kMaxLine);
+      strncpy(line_longest, line_current, LINE_MAX_LEN);
     }
   }
   if (line_longest_len > 0) { /* There was a line */

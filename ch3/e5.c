@@ -42,7 +42,7 @@ static void IntToBase(int n, int base, char str[]) {
     str[i++] = ValToChar((unsigned)(n % base));
   } while ((n /= base) > 0);
   str[i] = '\0';
-  reverse(str);
+  textReverse(str);
 }
 
 // Doesn't worry about base, caps at base 36
