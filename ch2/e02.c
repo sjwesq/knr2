@@ -15,13 +15,15 @@ int main(void) {
     switch (c) {
       case EOF:
       case '\n': {
-        goto getline_end;  // cursed assignments require cursed solutions
+        // Unorthodox solution for unorthodox problem seems fitting:
+        goto getline_end;
       }
       default: {
         s[i] = (char)c;
       }
     }
   }
+  // Only used to break from deep nesting:
 getline_end:
 
   // For testing
