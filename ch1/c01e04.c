@@ -1,5 +1,6 @@
 /* Write a program to print the corresponding Celsius to Fahrenheit table. */
 #include <stdio.h>
+#include <stdlib.h>
 
 #define LOWER 0
 #define UPPER 300
@@ -15,5 +16,5 @@ int main(void) {
     printf("%3.0f%6.1f\n", (double)celsius, (double)fahr);
   }
 
-  return 0;
+  return EXIT_SUCCESS;
 }
