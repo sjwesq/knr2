@@ -2,6 +2,7 @@
  * each backspace by \b, and each backslash by \\. This makes tabs and
  * backspaces visible in an unambiguous way. */
 #include <stdio.h>
+#include <stdlib.h>
 
 int main(void) {
   int c;
@@ -24,5 +25,5 @@ int main(void) {
     }
   }
 
-  return 0;
+  return EXIT_SUCCESS;
 }

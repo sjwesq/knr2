@@ -1,5 +1,6 @@
 /* Write a program that prints its input one word per line. */
 #include <stdio.h>
+#include <stdlib.h>
 
 int main(void) {
   int c, c_last;
@@ -16,5 +17,5 @@ int main(void) {
   }
   putchar('\n');
 
-  return 0;
+  return EXIT_SUCCESS;
 }
